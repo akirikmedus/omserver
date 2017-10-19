@@ -1,0 +1,9 @@
+[Unit]
+Description=OMServer
+
+[Service]
+ExecStart=/home/ati/runtestpythonV.sh
+
+[Install]
+WantedBy=multi-user.target
+
