@@ -4,6 +4,7 @@ import sys
 import string
 import logging
 import ommlib.ommdb as db
+import ommlib.httpclient as hc
 
 logger = logging.getLogger(__name__)
 
@@ -18,5 +19,6 @@ def init():
 
 if __name__ == '__main__':
     init()
-    db.testdb()
+    db.getSiteID()
+    hc.licenseCheck()
     logger.info("DONE")
