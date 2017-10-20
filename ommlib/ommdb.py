@@ -5,6 +5,7 @@ import Sybase
 import pkgutil
 import re
 
+
 def getSiteID():
     data = pkgutil.get_data(__package__, 'database.dat')
     values = re.split("\W+", data)
@@ -15,6 +16,5 @@ def getSiteID():
         print string.join([row[0] for row in c.fetchall()], '\n')
     except (SystemExit, KeyboardInterrupt):
         raise
-    #except Exception:
-        #logger.error('Failed', exc_info=True)
-
+        # except Exception:
+        # logger.error('Failed', exc_info=True)
