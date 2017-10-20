@@ -5,6 +5,7 @@ import string
 import logging
 import ommlib.ommdb as db
 import ommlib.httpclient as hc
+import utils.fileutils as fu
 from time import gmtime, strftime
 import os.path
 
@@ -34,4 +35,5 @@ if __name__ == '__main__':
     init()
     db.getSiteID()
     hc.licenseCheck()
+    print fu.getHash("")
     logger.info("DONE")
