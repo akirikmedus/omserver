@@ -2,6 +2,9 @@
 
 import urllib
 import urllib2
+import logging
+
+logger = logging.getLogger('omserver.httpclient')
 
 def licenseCheck():
     url = "http://pacs-stor.com/support/licact/registrationCheck.php"
@@ -18,5 +21,5 @@ def licenseCheck():
     resp = urllib2.urlopen(req)
     data = resp.read()
 
-    print(data)
+    logger.info(data)
 
