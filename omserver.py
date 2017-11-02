@@ -44,10 +44,9 @@ def main():
         logger.info("License file not found - " + lisenceFile)
 
     db.getSiteID()
-    hc.licenseCheck()
+    hc.licenseCheck('1234-5678', '12345678', 'VERIFY', '', strTimeStamp)
     logger.info(fu.getHash(""))
-    #logger.info(getHwAddr("ens33"))
-    print (getMacAddress())
+    logger.info(getMacAddress())
 
 
 if __name__ == '__main__':
