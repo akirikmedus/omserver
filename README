@@ -1,0 +1,7 @@
+copy: omserver.service to /etc/systemd/system/
+copy: omserver.timer to /etc/systemd/system/
+
+start service: systemctl start omserver
+enable service: systemctl enable omserver
+
+list running services: systemctl list-units --type=service --state=running
