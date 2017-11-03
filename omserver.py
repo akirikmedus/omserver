@@ -33,9 +33,10 @@ def getMacAddress():
     return address.replace(':','-')
 
 def main():
-    srTime = strftime("%Y%m%d%H%M", gmtime())
+    #srTime = strftime("%Y%m%d%H%M", gmtime())
+    # logger.info(srTime)
     strTimeStamp = strftime("%Y%m%d%H%M%S", gmtime())
-    #print strTimeStamp
+    # logger.info(strTimeStamp)
 
     lisenceFile = "/opt/OMTCmm/cf/license.dat"
     if os.path.isfile(lisenceFile):
@@ -43,11 +44,19 @@ def main():
     else:
         logger.info("License file not found - " + lisenceFile)
 
-    db.getSiteID()
-    hc.licenseCheck('1234-5678', '12345678', 'VERIFY', '', strTimeStamp)
-    logger.info(fu.getHash(""))
-    logger.info(getMacAddress())
+    hash = fu.getHash(lisenceFile)
+    logger.info(hash)
 
+    macaddress = getMacAddress()
+    logger.info(macaddress)
+
+    siteid = db.getSiteID()
+    logger.info(siteid)
+
+    productKey = db.getProductKey()
+    logger.info(productKey)
+
+    hc.licenseCheck(productKey, macaddress, 'VERIFY', hash, strTimeStamp)
 
 if __name__ == '__main__':
     initLogger()
