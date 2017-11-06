@@ -23,3 +23,28 @@ def getSiteID():
         raise
     except Exception:
         logger.error('Failed', exc_info=True)
+
+
+def getProductKey():
+    logger.info("getProductKey")
+    return '1234-5678';
+
+
+def setUserReplyString(str):
+    logger.info("setUserReplyString")
+
+
+def forseUpdatePrivBasedOnLicensing():
+    logger.info("forseUpdatePrivBasedOnLicensing")
+
+
+def GetLicenseCheckResponse():
+    return ''
+
+def reportLicenseCheck(sToLog, sToDB):
+    if('' == sToLog):
+        logger.info(str)
+
+    if('' == sToDB):
+        sql = 'UPDATE'
+

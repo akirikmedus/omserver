@@ -7,7 +7,7 @@ import logging
 logger = logging.getLogger('omserver.httpclient')
 
 
-def licenseCheck(productkey, mc, regtype, lichashcode, ts):
+def getLicenseInfo(productkey, mc, regtype, lichashcode, ts):
     url = "http://pacs-stor.com/support/licact/registrationCheck.php"
 
     params = {

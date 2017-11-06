@@ -1,3 +1,8 @@
 # strutils.py
 
-#import logging
+import logging
+
+logger = logging.getLogger('omserver.strutils')
+
+def parseLicenseReturn(licenseString):
+    logger.info("parseLicenseReturn")
