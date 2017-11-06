@@ -34,16 +34,59 @@ def getMacAddress():
     return address.replace(':','-')
 
 
-
 def deleteLicenseFile(fileName):
-    logger.info(fileName)
+    logger.info('delete file: ' + fileName)
+
+
+def onNoLicense(bDemoLicense, lisenceFile):
+    logger.info('onNoLicense')
+    db.setUserReplyString('')
+
+    if (not bDemoLicense):
+        deleteLicenseFile(lisenceFile)
+        db.forseUpdatePrivBasedOnLicensing()
+
+
+def onNewLicense():
+    db.hideDisabled(0)#false
+
+
+def onOk():
+    db.setUserReplyString('')
+
+
+def onPossibleTransfer():
+    db.setUserReplyString('')
+
+
+def onFailed():
+    db.setUserReplyString('')
+
+
+def onTransferFailed():
+    db.setUserReplyString('')
+
+
+def onTransferDenied():
+    db.setUserReplyString('')
+
+def onTransferComplete():
+    db.setUserReplyString('')
+
+
+def onLicenseDisabled():
+    db.setUserReplyString('')
+
+
+def onCorrupted():
+    db.setUserReplyString('')
 
 
 def main():
     strTime = strftime("%Y%m%d%H%M", gmtime())
     # logger.info(strTime)
     strTimeStamp = strftime("%Y%m%d%H%M%S", gmtime())
-    # logger.info(strTimeStamp)
+    # logger.info('time:'+strTimeStamp)
 
     lisenceFile = "/opt/OMTCmm/cf/license.dat"
 
@@ -57,18 +100,18 @@ def main():
     #    logger.info("License file not found - " + lisenceFile)
 
     macaddress = getMacAddress()
-    logger.info(macaddress)
+    logger.info('mac address: ' + macaddress)
 
     siteid = db.getSiteID()
-    logger.info(siteid)
+    logger.info('site id: ' + siteid)
 
     productKey = db.getProductKey()
-    logger.info(productKey)
+    logger.info('product key: ' + productKey)
 
     hash = ''
     if bLicense:
         hash = fu.getHash(lisenceFile)
-        logger.info(hash)
+        logger.info('license file hash = ' + hash)
         #bDemoLicense = readFile(lisenceFile).GetStrValue('CUSTOMER', 'SiteKey') == 'DEMO'
 
     request = 'VERIFY'
@@ -101,58 +144,37 @@ def main():
     status = ''
 
     if('PRODUCT_KEY_NOT_REGISTERED' == status or 'NO_LICENSE' == status):
-        db.setUserReplyString('')
+        onNoLicense(bDemoLicense, lisenceFile)
 
-        if(not bDemoLicense):
-            deleteLicenseFile(lisenceFile)
-            db.forseUpdatePrivBasedOnLicensing()
+    elif('LICENSE_ISSUED' == status):
+        onNewLicense()
 
-        return
+    elif('OK' == status):
+        onOk()
 
-    if('LICENSE_ISSUED' == status):
-        db.hideDisabled(0)#false
+    elif ('POSSIBLE_TRANSFER' == status):
+        onPossibleTransfer()
 
-        return
+    elif ('FAILED' == status):
+        onFailed()
 
-    if('OK' == status):
-        db.setUserReplyString('')
+    elif ('TRANSFER_FAILED' == status):
+        onTransferFailed()
 
-        return
+    elif ('TRANSFER_DENIED' == status):
+        onTransferDenied()
 
-    if ('POSSIBLE_TRANSFER' == status):
-        db.setUserReplyString('')
+    elif ('TRANSFER_COMPLETE' == status):
+        onTransferComplete()
 
-        return
+    elif ('LICENSE_DISABLED' == status):
+        onLicenseDisabled()
 
-    if ('FAILED' == status):
-        db.setUserReplyString('')
+    elif ('CORRUPTED' == status):
+        onCorrupted()
 
-        return
-
-    if ('TRANSFER_FAILED' == status):
-        db.setUserReplyString('')
-
-        return
-
-    if ('TRANSFER_DENIED' == status):
-        db.setUserReplyString('')
-
-        return
-
-    if ('TRANSFER_COMPLETE' == status):
-        db.setUserReplyString('')
-
-        return
-
-    if ('LICENSE_DISABLED' == status):
-        db.setUserReplyString('')
-
-        return
-
-    if ('CORRUPTED' == status):
-        db.setUserReplyString('')
-
-        return
+    else:
+        logger.error('something is wrong, should not be here')
 
 if __name__ == '__main__':
     initLogger()

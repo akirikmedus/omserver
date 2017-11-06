@@ -10,7 +10,7 @@ import logging
 logger = logging.getLogger('omserver.ommdb')
 
 def getSiteID():
-    logger.info("getSiteID")
+    #logger.info("getSiteID")
 
     data = pkgutil.get_data(__package__, 'database.dat')
     values = re.split("\W+", data)
@@ -18,7 +18,7 @@ def getSiteID():
         db = Sybase.connect(values[0], values[1], values[2], values[3])
         c = db.cursor()
         c.execute("select site_id, name, type from sites")
-        logger.info(string.join([row[0] for row in c.fetchall()], '\n'))
+        return (string.join([row[0] for row in c.fetchall()], '\n'))
     except (SystemExit, KeyboardInterrupt):
         raise
     except Exception:
@@ -26,7 +26,7 @@ def getSiteID():
 
 
 def getProductKey():
-    logger.info("getProductKey")
+    #logger.info("getProductKey")
     return '1234-5678';
 
 
@@ -43,7 +43,7 @@ def GetLicenseCheckResponse():
 
 def reportLicenseCheck(sToLog, sToDB):
     if('' == sToLog):
-        logger.info(str)
+        logger.info(sToLog)
 
     if('' == sToDB):
         sql = 'UPDATE'

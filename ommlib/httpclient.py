@@ -24,5 +24,5 @@ def getLicenseInfo(productkey, mc, regtype, lichashcode, ts):
     resp = urllib2.urlopen(req)
     data = resp.read()
 
-    logger.info(data)
+    logger.info('HTTP response: ' + data)
 
