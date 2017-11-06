@@ -26,6 +26,13 @@ def initLogger():
     logger.addHandler(handler)
 
 
+def parseLicenseReturn(data):
+    gotit = message =  messagecode =  messagestring = status = licensecoderm = license = licenselen = messtimestamp = ""
+
+
+    return (True, message, messagecode, messagestring, status, licensecoderm, license, licenselen, messtimestamp)
+
+
 def getMacAddress():
     ifname = netifaces.interfaces()[1]
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -124,24 +131,22 @@ def main():
         else:
             request = 'VERIFY'
 
-    gotit = hc.getLicenseInfo(productKey, macaddress, request, hash, strTimeStamp)
+    (gotit, data) = hc.getLicenseInfo(productKey, macaddress, request, hash, strTimeStamp)
 
     if(not gotit):
-        str = ''
-        db.reportLicenseCheck(str, str)
-        return
+        str = strTime + '|FAILED_IN_POST|FAILED_IN_POST_MSG|'
+        db.reportLicenseCheck('Failed in POST', str)
+        return False
 
-    gotit = parseLicenseReturn()
+    (gotit, message, messagecode, messagestring, status, licensecoderm, license, licenselen, messtimestamp) = parseLicenseReturn(data)
 
     if(not gotit):
-        str = ''
-        db.reportLicenseCheck(str, str)
-        return
+        str = strTime + '|FAILED_IN_POST|FAILED_IN_POST_MSG|Corrupted return from server'
+        db.reportLicenseCheck('Corrupted return from server', str)
+        return False
 
-    str = ''
-    db.reportLicenseCheck(str, str)
-
-    status = ''
+    str = strTime + '|' + status + '|' + messagecode + '|' + message
+    db.reportLicenseCheck('', str)
 
     if('PRODUCT_KEY_NOT_REGISTERED' == status or 'NO_LICENSE' == status):
         onNoLicense(bDemoLicense, lisenceFile)

@@ -25,4 +25,5 @@ def getLicenseInfo(productkey, mc, regtype, lichashcode, ts):
     data = resp.read()
 
     logger.info('HTTP response: ' + data)
+    return True, data
 
