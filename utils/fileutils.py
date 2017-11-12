@@ -6,16 +6,17 @@ import os.path
 
 
 def getHash(filename):
-    #logger = logging.getLogger(__name__)
     logger = logging.getLogger('omserver.fileutils.getHash')
-    logger.info("getHash" + filename)
-
-    #print (hashlib.sha1("The quick brown fox jumps over the lazy dog").hexdigest())
+    # logger.info("getHash" + filename)
 
     if not os.path.isfile(filename):
         logger.error("File doesn't exist: " + filename)
-        return
+        return ""
 
-    return hashlib.sha1("Nobody inspects the spanish repetition").hexdigest()
+    f = open(filename, 'r')
+    license = f.read()
+    f.close()
+
+    return hashlib.sha1(license).hexdigest()
 
 

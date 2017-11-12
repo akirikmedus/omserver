@@ -7,6 +7,7 @@ import logging.handlers
 import ommlib.ommdb as db
 import ommlib.httpclient as hc
 import utils.fileutils as fu
+import utils.strutils as su
 from time import gmtime, strftime
 import os.path
 import socket
@@ -17,7 +18,7 @@ import netifaces
 #logger = logging.getLogger(__name__)
 logger = logging.getLogger('omserver')
 
-def initLogger():
+def initLogger(): # done
     logging.basicConfig(level=logging.INFO)
     handler = logging.handlers.RotatingFileHandler("omserver.log", 'a', 4096, 3)
     handler.setLevel(logging.INFO)
@@ -26,14 +27,7 @@ def initLogger():
     logger.addHandler(handler)
 
 
-def parseLicenseReturn(data):
-    gotit = message =  messagecode =  messagestring = status = licensecoderm = license = licenselen = messtimestamp = ""
-
-
-    return (True, message, messagecode, messagestring, status, licensecoderm, license, licenselen, messtimestamp)
-
-
-def getMacAddress():
+def getMacAddress(): # done
     ifname = netifaces.interfaces()[1]
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     info = fcntl.ioctl(s.fileno(), 0x8927,  struct.pack('256s', ifname[:15]))
@@ -41,52 +35,126 @@ def getMacAddress():
     return address.replace(':','-')
 
 
-def deleteLicenseFile(fileName):
-    logger.info('delete file: ' + fileName)
+def deleteLicenseFile(fileName): # done
+    logger.info('deleting file: ' + fileName)
+    try:
+        os.remove(fileName)
+    except Exception:
+        logger.error('Failed to delete file '+fileName, exc_info=False)
 
 
-def onNoLicense(bDemoLicense, lisenceFile):
+def saveLicenseFile(fileName, license): # done
+    logger.info('saving license file: ' + fileName)
+    try:
+        f = open(fileName, 'w')
+        f.write(license)
+        f.close()
+    except Exception:
+        logger.error('Failed to save file '+fileName, exc_info=False)
+
+def onNoLicense(bDemoLicense, licenseFile, strTime, status, message, messagecode):  # done
     logger.info('onNoLicense')
-    db.setUserReplyString('')
+    if not messagecode:
+        db.setUserReplyString(strTime+'|'+status+'|'+messagecode, '')
+    else:
+        db.setUserReplyString(strTime + '|' + status + '|' + message, '')
 
     if (not bDemoLicense):
-        deleteLicenseFile(lisenceFile)
+        deleteLicenseFile(licenseFile)
         db.forseUpdatePrivBasedOnLicensing()
 
 
-def onNewLicense():
-    db.hideDisabled(0)#false
+def onNewLicense(licenseFile, license, licensecoderm): # done
+    logger.info('onNewLicense')
+
+    db.hideDisabled(False)
+    licenseCodeLcNew = su.getHash(license)
+
+    saveLicenseFile(licenseFile, license)
+    licenseCodeLcNewFile = fu.getHash(licenseFile)
+    if licensecoderm != licenseCodeLcNewFile:
+        logger.error("Hash code don't match. Received: " + licensecoderm + " from file: " + licenseCodeLcNewFile)
+
+    db.forseUpdatePrivBasedOnLicensing()
+    db.forseUpdateMaxBasedOnLicensing()
+
+    # fu.updateWatcherBasedOnLicensing() - no need
+
+    db.setUserReplyString('', '')
 
 
-def onOk():
-    db.setUserReplyString('')
+def onTransferComplete(licenseFile, license, licensecoderm): # done
+    logger.info('onTransferComplete')
+
+    licenseCodeLcNew = su.getHash(license)
+
+    db.hideDisabled(False)
+
+    saveLicenseFile(licenseFile, license)
+    licenseCodeLcNewFile = fu.getHash(licenseFile)
+    if licensecoderm != licenseCodeLcNewFile:
+        logger.error("Hash code don't match. Received: " + licensecoderm + " from file: " + licenseCodeLcNewFile)
+
+    db.forseUpdatePrivBasedOnLicensing()
+
+    db.setUserReplyString('', '')
 
 
-def onPossibleTransfer():
-    db.setUserReplyString('')
+def onOk():  # done
+    logger.info('onOk')
+    db.setUserReplyString('', '')
+    #done here
 
 
-def onFailed():
-    db.setUserReplyString('')
+def onPossibleTransfer(strTime, status, message, messagecode):  # done
+    logger.info('onPossibleTransfer')
+    if not messagecode:
+        db.setUserReplyString(strTime+'|'+status+'|'+messagecode, '')
+    else:
+        db.setUserReplyString(strTime + '|' + status + '|' + message, '')
 
 
-def onTransferFailed():
-    db.setUserReplyString('')
+def onFailed(productKey, strTime, status, message, messagecode):  # done
+    logger.info('onFailed')
+    if not productKey: # no produce key means DEMO:
+        # do nothing
+        i = 0
+    else:
+        if not messagecode:
+            db.setUserReplyString(strTime+'|'+status+'|'+messagecode, '')
+        else:
+            db.setUserReplyString(strTime + '|' + status + '|' + message, '')
 
 
-def onTransferDenied():
-    db.setUserReplyString('')
-
-def onTransferComplete():
-    db.setUserReplyString('')
-
-
-def onLicenseDisabled():
-    db.setUserReplyString('')
+def onTransferFailed(strTime, status, message, messagecode):  # done
+    logger.info('onTransferFailed')
+    if not messagecode:
+        db.setUserReplyString(strTime+'|'+status+'|'+messagecode, '')
+    else:
+        db.setUserReplyString(strTime + '|' + status + '|' + message, '')
 
 
-def onCorrupted():
-    db.setUserReplyString('')
+def onTransferDenied(strTime, status, message, messagecode):  # done
+    logger.info('onTransferDenied')
+    if not messagecode:
+        db.setUserReplyString(strTime+'|'+status+'|'+messagecode, '')
+    else:
+        db.setUserReplyString(strTime + '|' + status + '|' + message, '')
+
+
+def onLicenseDisabled(strTime, status, message, messagecode, licenseFile):  # done
+    logger.info('onLicenseDisabled')
+    if not messagecode:
+        db.setUserReplyString(strTime+'|'+status+'|'+messagecode, '')
+    else:
+        db.setUserReplyString(strTime + '|' + status + '|' + message, '')
+
+    deleteLicenseFile(licenseFile)
+    db.hideDisabled(True)
+
+
+def onCorrupted(strTime, status, message, messagecode): # done? (originally here we would retry, but...)
+    logger.info('onCorrupted')
 
 
 def main():
@@ -95,16 +163,18 @@ def main():
     strTimeStamp = strftime("%Y%m%d%H%M%S", gmtime())
     # logger.info('time:'+strTimeStamp)
 
-    lisenceFile = "/opt/OMTCmm/cf/license.dat"
+    db.checkDBtables()
+
+    licenseFile = "/opt/OMTCmm/cf/license.dat"
 
     medusHomeDir = r'/opt/OMTCmm/'
 
-    bLicense = os.path.isfile(lisenceFile)
+    bLicense = os.path.isfile(licenseFile)
     bDemoLicense = not bLicense
     #if bLicense:
     #    logger.info("License file exist")
     #else:
-    #    logger.info("License file not found - " + lisenceFile)
+    #    logger.info("License file not found - " + licenseFile)
 
     macaddress = getMacAddress()
     logger.info('mac address: ' + macaddress)
@@ -117,9 +187,9 @@ def main():
 
     hash = ''
     if bLicense:
-        hash = fu.getHash(lisenceFile)
+        hash = fu.getHash(licenseFile)
         logger.info('license file hash = ' + hash)
-        #bDemoLicense = readFile(lisenceFile).GetStrValue('CUSTOMER', 'SiteKey') == 'DEMO'
+        #bDemoLicense = readFile(licenseFile).GetStrValue('CUSTOMER', 'SiteKey') == 'DEMO'
 
     request = 'VERIFY'
     response = db.GetLicenseCheckResponse()       # TRANSFER or HARDWARE_CHANGE
@@ -132,13 +202,15 @@ def main():
             request = 'VERIFY'
 
     (gotit, data) = hc.getLicenseInfo(productKey, macaddress, request, hash, strTimeStamp)
+    logger.info('FROM POST:' + data)
 
     if(not gotit):
         str = strTime + '|FAILED_IN_POST|FAILED_IN_POST_MSG|'
         db.reportLicenseCheck('Failed in POST', str)
         return False
 
-    (gotit, message, messagecode, messagestring, status, licensecoderm, license, licenselen, messtimestamp) = parseLicenseReturn(data)
+    (gotit, message, messagecode, messagestring, status, licensecoderm, license, licenselen, messtimestamp) = su.parseLicenseReturn(data)
+    logger.info('message:'+message+'; status:'+status)
 
     if(not gotit):
         str = strTime + '|FAILED_IN_POST|FAILED_IN_POST_MSG|Corrupted return from server'
@@ -149,34 +221,34 @@ def main():
     db.reportLicenseCheck('', str)
 
     if('PRODUCT_KEY_NOT_REGISTERED' == status or 'NO_LICENSE' == status):
-        onNoLicense(bDemoLicense, lisenceFile)
+        onNoLicense(bDemoLicense, licenseFile, strTime, status, message, messagecode)
 
     elif('LICENSE_ISSUED' == status):
-        onNewLicense()
+        onNewLicense(licenseFile, license, licensecoderm)
 
     elif('OK' == status):
         onOk()
 
     elif ('POSSIBLE_TRANSFER' == status):
-        onPossibleTransfer()
+        onPossibleTransfer(strTime, status, message, messagecode)
 
     elif ('FAILED' == status):
-        onFailed()
+        onFailed(productKey, strTime, status, message, messagecode)
 
     elif ('TRANSFER_FAILED' == status):
-        onTransferFailed()
+        onTransferFailed(strTime, status, message, messagecode)
 
     elif ('TRANSFER_DENIED' == status):
-        onTransferDenied()
+        onTransferDenied(strTime, status, message, messagecode)
 
     elif ('TRANSFER_COMPLETE' == status):
-        onTransferComplete()
+        onTransferComplete(licenseFile, license, licensecoderm)
 
     elif ('LICENSE_DISABLED' == status):
-        onLicenseDisabled()
+        onLicenseDisabled(strTime, status, message, messagecode, licenseFile)
 
     elif ('CORRUPTED' == status):
-        onCorrupted()
+        onCorrupted(strTime, status, message, messagecode)
 
     else:
         logger.error('something is wrong, should not be here')
