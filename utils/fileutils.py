@@ -20,3 +20,11 @@ def getHash(filename):
     return hashlib.sha1(license).hexdigest()
 
 
+def test_getHash_():
+    print ("=== getHash ===")
+    print("Not implemented")
+
+
+if __name__ == '__main__':
+    test_getHash_()
+

@@ -1,3 +1,5 @@
+install netifaces: yum install python-netifaces
+
 copy: omserver.service to /etc/systemd/system/
 copy: omserver.timer to /etc/systemd/system/
 

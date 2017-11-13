@@ -4,18 +4,22 @@ import urllib
 import urllib2
 import logging
 
+
 logger = logging.getLogger('omserver.httpclient')
 
-testReplyNoLicense = """"msg:^License disabled|MSG_LICENSE_DISABLED
+
+testReplyNoLicense = """msg:^License disabled|MSG_LICENSE_DISABLED
 status:^LICENSE_DISABLED
 dt:^20171106
 <br>"""
 
+
 testReplyLicenseVerified = ""
-""""msg:^License verified|MSG_LICENSE_VERIFIED
+"""msg:^License verified|MSG_LICENSE_VERIFIED
 status:^OK
 dt:^20171106
 <br>"""
+
 
 testReplyLicenseIssued = ""
 """msg:^License issued|MSG_LICENSE_ISSUED
@@ -196,4 +200,13 @@ def getLicenseInfo(productkey, mc, regtype, lichashcode, ts):
 
     #logger.info('HTTP response: ' + data)
     return True, data
+
+
+def test_getLicenseInfo_():
+    print ("=== getLicenseInfo ===")
+    print("Not implemented")
+
+
+if __name__ == '__main__':
+    test_getLicenseInfo_()
 

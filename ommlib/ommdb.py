@@ -6,9 +6,14 @@ import pkgutil
 import re
 import logging
 import os.path
+import sybpydb
 
 # logger = logging.getLogger(__name__)
 logger = logging.getLogger('omserver.ommdb')
+
+
+testProductKey = """16C1-036E-19CE-03D6"""
+
 
 def getOneValue(sql):
     # logger.info("getOneValue")
@@ -18,6 +23,8 @@ def getOneValue(sql):
     try:
         db = Sybase.connect(values[0], values[1], values[2], values[3])
         c = db.cursor()
+        # print("executeSql. SQL: "+sql)
+        # logger.info("executeSql. SQL: " + sql)
         c.execute(sql)
         data = c.fetchall()
         return data[0][0] # first row, first column
@@ -26,6 +33,7 @@ def getOneValue(sql):
         raise
     except Exception:
         logger.error('Failed', exc_info=False)
+    return ''
 
 
 def executeSql(sql):
@@ -34,13 +42,15 @@ def executeSql(sql):
     try:
         db = Sybase.connect(values[0], values[1], values[2], values[3])
         c = db.cursor()
-        logger.info("executeSql. SQL: "+sql)
+        # print("executeSql. SQL: "+sql)
+        # logger.info("executeSql. SQL: "+sql)
         c.execute(sql)
         return c.rowcount
     except (SystemExit, KeyboardInterrupt):
         raise
     except Exception:
         logger.error('Failed', exc_info=False)
+    return 0
 
 
 def getSiteID():
@@ -50,7 +60,9 @@ def getSiteID():
 
 def getProductKey():
     # logger.info("getProductKey")
-    return '1234-5678';
+
+    if testProductKey:
+        return testProductKey
 
     sql = "SELECT value FROM tm_prefs WHERE name = 'GLOBAL' AND param = 'DeviceID'"
     return getOneValue(sql)
@@ -135,18 +147,24 @@ def forseUpdateMaxBasedOnLicensing(licenseFile):
         sql = "INSERT INTO tm_prefs (name, param, value) values ('GLOBAL', 'pil', '" + sss + "')"
         executeSql(sql)
 
+
 def GetLicenseCheckResponse():
     return ''
 
+
 def reportLicenseCheck(sToLog, sToDB):
-    if('' == sToLog):
+    if sToLog:
         logger.info(sToLog)
 
-    if('' == sToDB):
+    updated = 0
+    if sToDB:
         sql = "UPDATE tm_prefs SET value ='" + sToDB + "' WHERE name = 'LCS' AND param = 'last_check'"
-        if executeSql(sql) < 1:
-            sql = "INSERT INTO tm_prefs values ('LCS', 'last_check', '" + sToDB + "')"
-            executeSql(sql)
+        updated = executeSql(sql)
+        if updated < 1:
+            sql = "INSERT INTO tm_prefs (name, param, value) values ('LCS', 'last_check', '" + sToDB + "')"
+            updated = executeSql(sql)
+
+    return updated
 
 
 def hideDisabled(disabled):
@@ -194,4 +212,37 @@ def checkDBtables():
         except Exception:
             logger.error('Failed', exc_info=True)
 
+
+def test_hideDisabled_isDisabled_():
+    print ("=== hideDisabled & isDisabled ===")
+    hideDisabled(False)
+    result = isDisabled()
+    hideDisabled(True)
+    result2 = isDisabled()
+    if not result and result2:
+        print("OK")
+    else:
+        print("Failed. result="+str(result)+", result2="+str(result2))
+
+
+def test_getSiteID_():
+    print ("=== getSiteID ===")
+    if 'LT1-' == getSiteID():
+        print("OK")
+    else:
+        print("Failed")
+
+
+def test_reportLicenseCheck_():
+    print ("=== reportLicenseCheck ===")
+    updated = reportLicenseCheck('', 'test')
+    if 1 == updated:
+        print("OK")
+    else:
+        print("Failed. updated="+str(updated))
+
+
+if __name__ == '__main__':
+    test_hideDisabled_isDisabled_()
+    # test_getSiteID_()
 
