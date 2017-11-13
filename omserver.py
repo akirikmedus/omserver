@@ -1,7 +1,5 @@
 #!/usr/bin/python
 
-import sys
-import string
 import logging
 import logging.handlers
 import ommlib.ommdb as db
@@ -153,8 +151,32 @@ def onLicenseDisabled(strTime, status, message, messagecode, licenseFile):  # do
     db.hideDisabled(True)
 
 
-def onCorrupted(strTime, status, message, messagecode): # done? (originally here we would retry, but...)
+def onCorrupted(licenseFile, strTime, status, message, messagecode, productKey, macaddress, strTimeStamp):
     logger.info('onCorrupted')
+
+    request = 'GET_LICENSE'
+    (gotit, data) = hc.getLicenseInfo(productKey, macaddress, request, hash, strTimeStamp)
+    logger.info('FROM POST:' + data)
+
+    if (not gotit):
+        str = strTime + '|FAILED_IN_POST|FAILED_IN_POST_MSG|'
+        db.reportLicenseCheck('Failed in POST', str)
+        return False
+
+    (gotit, message, messagecode, messagestring, status, licensecoderm, license, licenselen,
+     messtimestamp) = su.parseLicenseReturn(data)
+    logger.info('message:' + message + '; status:' + status)
+
+    if (not gotit):
+        str = strTime + '|FAILED_IN_POST|FAILED_IN_POST_MSG|Corrupted return from server'
+        db.reportLicenseCheck('Corrupted return from server', str)
+        return False
+
+    str = strTime + '|' + status + '|' + messagecode + '|' + message
+    db.reportLicenseCheck('', str)
+
+    if ('LICENSE_ISSUED' == status):
+        return onNewLicense(licenseFile, license, licensecoderm)
 
 
 def main():
@@ -248,7 +270,7 @@ def main():
         onLicenseDisabled(strTime, status, message, messagecode, licenseFile)
 
     elif ('CORRUPTED' == status):
-        onCorrupted(strTime, status, message, messagecode)
+        onCorrupted(licenseFile, strTime, status, message, messagecode, productKey, macaddress, strTimeStamp)
 
     else:
         logger.error('something is wrong, should not be here')

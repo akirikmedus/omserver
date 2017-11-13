@@ -5,6 +5,7 @@ import Sybase
 import pkgutil
 import re
 import logging
+import os.path
 
 # logger = logging.getLogger(__name__)
 logger = logging.getLogger('omserver.ommdb')
@@ -69,8 +70,33 @@ def setUserReplyString(request, response):
         executeSql(sql)
 
 
+def updatePrivBasedOnLicensing(): # TODO
+    i = 1
+
+
 def forseUpdatePrivBasedOnLicensing(licenseFile):
     logger.info("forseUpdatePrivBasedOnLicensing")
+
+    if not os.path.isfile(licenseFile):
+        logger.error("File path {} does not exists.".format(licenseFile))
+
+    sql = "update user_privileges_lc set licensed = 0"
+    executeSql(sql)
+
+    bInPrivs = False
+    with open(licenseFile) as fp:
+        for line in fp:
+            if line == '[PRIVILEGES]':
+                bInPrivs = True
+            if not bInPrivs:
+                continue
+            else:
+                s = line.split('=')
+                sql = "update user_privileges_lc set licensed = 1 where privilege = '" + s + "'"
+                executeSql(sql)
+    fp.close
+
+    return updatePrivBasedOnLicensing()
 
 
 def forseUpdateMaxBasedOnLicensing(licenseFile):
