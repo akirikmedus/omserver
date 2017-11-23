@@ -3,7 +3,8 @@
 import sys
 import logging
 import logging.handlers
-import ommlib.ommdb as db
+# import ommlib.ommdb as db
+import ommlib.ommdbs as db
 import ommlib.httpclient as hc
 import utils.fileutils as fu
 import utils.strutils as su

@@ -1,14 +1,14 @@
-# ommdb.py
+# ommdbs.py
 
 import ConfigParser
-import Sybase
 import pkgutil
 import re
 import logging
 import os.path
+import sybpydb
 
 # logger = logging.getLogger(__name__)
-logger = logging.getLogger('omserver.ommdb')
+logger = logging.getLogger('omserver.ommdbs')
 
 
 testProductKey = """16C1-036E-19CE-03D6"""
@@ -20,15 +20,16 @@ def getOneValue(sql):
     data = pkgutil.get_data(__package__, 'database.dat')
     values = re.split("\W+", data)
     try:
-        db = Sybase.connect(values[0], values[1], values[2], values[3])
+        db = sybpydb.connect(servername=values[0], user=values[1], password=values[2])
         c = db.cursor()
+        c.execute("use us")
         # print("executeSql. SQL: "+sql)
         # logger.info("executeSql. SQL: " + sql)
         c.execute(sql)
+        # print(c.rowcount)
         data = c.fetchall()
-        # c.execute("select @@rowcount")
+        c.execute("select @@rowcount")
         # count = c.fetchall()[0][0]
-        # count = c.rowcount
         # print(count)
         c.close()
         db.close()
@@ -36,6 +37,9 @@ def getOneValue(sql):
         #return (string.join([row[0] for row in c.fetchall()], '\n'))
     except (SystemExit, KeyboardInterrupt):
         raise
+    except sybpydb.Error:
+        for err in c.connection.messages:
+            logger.error("Exception %s, Value %s" % (err[0], err[1]))
     except Exception:
         logger.error('Failed', exc_info=False)
     return ''
@@ -45,19 +49,22 @@ def executeSql(sql):
     data = pkgutil.get_data(__package__, 'database.dat')
     values = re.split("\W+", data)
     try:
-        db = Sybase.connect(values[0], values[1], values[2], values[3])
+        db = sybpydb.connect(servername=values[0], user=values[1], password=values[2])
         c = db.cursor()
-        print("executeSql. SQL: "+sql)
+        c.execute("use us")
+        # print("executeSql. SQL: "+sql)
         # logger.info("executeSql. SQL: "+sql)
         c.execute(sql)
         c.execute("select @@rowcount")
         count = c.fetchall()[0][0]
         c.close()
         db.close()
-        return c.rowcount
-        # return count
+        return count
     except (SystemExit, KeyboardInterrupt):
         raise
+    except sybpydb.Error:
+        for err in c.connection.messages:
+            logger.error("Exception %s, Value %s" % (err[0], err[1]))
     except Exception:
         logger.error('Failed', exc_info=False)
     return 0
@@ -116,7 +123,7 @@ def forseUpdatePrivBasedOnLicensing(licenseFile):
                 s = line.split('=')
                 sql = "update user_privileges_lc set licensed = 1 where privilege = '" + s + "'"
                 executeSql(sql)
-    fp.close
+    fp.close()
 
     return updatePrivBasedOnLicensing()
 
@@ -170,7 +177,6 @@ def reportLicenseCheck(sToLog, sToDB):
     if sToDB:
         sql = "UPDATE tm_prefs SET value ='" + sToDB + "' WHERE name = 'LCS' AND param = 'last_check'"
         updated = executeSql(sql)
-        print (updated)
         if updated < 1:
             sql = "INSERT INTO tm_prefs (name, param, value) values ('LCS', 'last_check', '" + sToDB + "')"
             updated = executeSql(sql)
@@ -203,14 +209,17 @@ def checkDBtables():
     data = pkgutil.get_data(__package__, 'database.dat')
     values = re.split("\W+", data)
     try:
-        db = Sybase.connect(values[0], values[1], values[2], values[3])
+        db = sybpydb.connect(servername=values[0], user=values[1], password=values[2])
         c = db.cursor()
+        c.execute("use us")
         c.execute("select name from tm_prefs")
         data = c.fetchall()
         # name = data[0][0]  # first row, first column
         okay = True
     except (SystemExit, KeyboardInterrupt):
         raise
+    except sybpydb.Error:
+        okay = False
     except Exception:
         okay = False
 
@@ -222,6 +231,9 @@ def checkDBtables():
             db.close()
         except (SystemExit, KeyboardInterrupt):
             raise
+        except sybpydb.Error:
+            for err in c.connection.messages:
+                logger.error("Exception %s, Value %s" % (err[0], err[1]))
         except Exception:
             logger.error('Failed', exc_info=True)
 
