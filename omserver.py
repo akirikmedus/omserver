@@ -22,7 +22,7 @@ logger = logging.getLogger('omserver')
 
 def initLogger(): # done
     logging.basicConfig(level=logging.INFO)
-    handler = logging.handlers.RotatingFileHandler("omserver.log", 'a', 4096, 3)
+    handler = logging.handlers.RotatingFileHandler("omserver.log", 'a', 65536, 3)
     handler.setLevel(logging.INFO)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     handler.setFormatter(formatter)
@@ -79,12 +79,11 @@ def onNewLicense(licenseFile, license, licensecoderm): # done
     if licensecoderm != licenseCodeLcNewFile:
         logger.error("Hash code don't match. Received: " + licensecoderm + " from file: " + licenseCodeLcNewFile)
 
-    db.forseUpdatePrivBasedOnLicensing()
-    db.forseUpdateMaxBasedOnLicensing()
-
-    # fu.updateWatcherBasedOnLicensing() - no need
-
     db.setUserReplyString('', '')
+
+    db.forseUpdateMaxBasedOnLicensing(licenseFile)
+    db.forseUpdatePrivBasedOnLicensing(licenseFile)
+    # fu.updateWatcherBasedOnLicensing() - no need
 
 
 def onTransferComplete(licenseFile, license, licensecoderm): # done
@@ -196,7 +195,9 @@ def main():
     strTimeStamp = strftime("%Y%m%d%H%M%S", gmtime())
     # logger.info('time:'+strTimeStamp)
 
-    db.checkDBtables()
+    if not db.checkDBtables(True):
+        logger.error("Database check failed. Cannot continue.")
+        return
 
     licenseFile = "/opt/OMTCmm/cf/license.dat"
 
@@ -291,7 +292,6 @@ def test():
     print ("===  U N I T   T E S T  ===")
     db.test_getSiteID_()
     db.test_reportLicenseCheck_()
-
 
 if __name__ == '__main__':
 

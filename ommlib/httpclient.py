@@ -8,7 +8,8 @@ import logging
 logger = logging.getLogger('omserver.httpclient')
 
 
-testReplyNoLicense = """msg:^License disabled|MSG_LICENSE_DISABLED
+testReplyNoLicense = ""
+""""msg:^License disabled|MSG_LICENSE_DISABLED
 status:^LICENSE_DISABLED
 dt:^20171106
 <br>"""
@@ -21,10 +22,9 @@ dt:^20171106
 <br>"""
 
 
-testReplyLicenseIssued = ""
-"""msg:^License issued|MSG_LICENSE_ISSUED
+testReplyLicenseIssued = """msg:^License issued|MSG_LICENSE_ISSUED
 status:^LICENSE_ISSUED
-licHashCode:^D2036C0C1905D1591D7087C6D7DD4989A3F5B8C4
+licHashCode:^120e8c04b29bba99b64359adf54a5c99b738a703
 licCount:^5494
 licString:^#
 # !!! PLEASE DO NOT EDIT THE CONTENT OF THIS FILE !!!
@@ -192,11 +192,16 @@ def getLicenseInfo(productkey, mc, regtype, lichashcode, ts):
         'ts': ts
     }
 
-    querystring = urllib.urlencode(params)
+    try:
+        querystring = urllib.urlencode(params)
 
-    req = urllib2.Request(url, querystring)
-    resp = urllib2.urlopen(req)
-    data = resp.read()
+        req = urllib2.Request(url, querystring)
+        resp = urllib2.urlopen(req)
+        data = resp.read()
+    except (SystemExit, KeyboardInterrupt):
+        raise
+    except Exception:
+        return False, ""
 
     #logger.info('HTTP response: ' + data)
     return True, data
@@ -204,7 +209,11 @@ def getLicenseInfo(productkey, mc, regtype, lichashcode, ts):
 
 def test_getLicenseInfo_():
     print ("=== getLicenseInfo ===")
-    print("Not implemented")
+    (gotit, data) = getLicenseInfo('1234-5678', '12345678', 'GET_LICENSE', '', '')
+    if(gotit and 0 == data.find("msg:^")):
+        print("OK")
+    else:
+        print("Failed")
 
 
 if __name__ == '__main__':

@@ -4,10 +4,13 @@ import hashlib
 import logging
 import os.path
 
+logger = logging.getLogger('omserver.fileutils')
 
 def getHash(filename):
-    logger = logging.getLogger('omserver.fileutils.getHash')
-    # logger.info("getHash" + filename)
+    ''' returns hash for a file content
+        empty string is files does not exist
+        Ready to use
+    '''
 
     if not os.path.isfile(filename):
         logger.error("File doesn't exist: " + filename)
@@ -22,7 +25,12 @@ def getHash(filename):
 
 def test_getHash_():
     print ("=== getHash ===")
-    print("Not implemented")
+
+    if("8812fa2cc436af0cc2b0c372ce43a6763e57a547" == getHash("fileutils.txt")):
+        print("OK")
+    else:
+        print("Failed")
+        print(getHash("fileutils.txt"))
 
 
 if __name__ == '__main__':

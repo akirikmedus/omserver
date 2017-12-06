@@ -8,8 +8,9 @@ logger = logging.getLogger('omserver.strutils')
 
 
 def getHash(str):
-    # logger = logging.getLogger('omserver.strutils.getHash')
-    # return (hashlib.sha1("The quick brown fox jumps over the lazy dog").hexdigest())
+    ''' returns hash for a string
+        Ready to use
+    '''
     return hashlib.sha1(str).hexdigest()
 
 

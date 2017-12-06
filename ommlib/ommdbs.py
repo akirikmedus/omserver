@@ -223,6 +223,10 @@ def updatePrivBasedOnLicensing():
 def forseUpdatePrivBasedOnLicensing(licenseFile):
     logger.info("forseUpdatePrivBasedOnLicensing")
 
+    if not checkDBtables(False):
+        logger.error("Check database failed. Cannot continue.")
+        return
+
     if not os.path.isfile(licenseFile):
         logger.error("File path {} does not exists.".format(licenseFile))
 
@@ -252,33 +256,33 @@ def forseUpdateMaxBasedOnLicensing(licenseFile):
     config.read(licenseFile)
 
     sss = config.getint("CAPACITY", "PACSMaxImageCount")
-    sql = "UPDATE tm_prefs SET value ='" + sss + "' WHERE name = 'GLOBAL' AND param = 'pic'"
+    sql = "UPDATE tm_prefs SET value ='" + str(sss) + "' WHERE name = 'GLOBAL' AND param = 'pic'"
     if executeSql(sql) < 1:
-        sql = "INSERT INTO tm_prefs (name, param, value) values ('GLOBAL', 'pic', '" + sss + "')"
+        sql = "INSERT INTO tm_prefs (name, param, value) values ('GLOBAL', 'pic', '" + str(sss) + "')"
         executeSql(sql)
 
     sss = config.getint("CAPACITY", "PACSMaxPushDestinations")
-    sql = "UPDATE tm_prefs SET value ='" + sss + "' WHERE name = 'GLOBAL' AND param = 'pid'"
+    sql = "UPDATE tm_prefs SET value ='" + str(sss) + "' WHERE name = 'GLOBAL' AND param = 'pid'"
     if executeSql(sql) < 1:
-        sql = "INSERT INTO tm_prefs (name, param, value) values ('GLOBAL', 'pid', '" + sss + "')"
+        sql = "INSERT INTO tm_prefs (name, param, value) values ('GLOBAL', 'pid', '" + str(sss) + "')"
         executeSql(sql)
 
     sss = config.getint("CAPACITY", "PACSMaxModalities")
-    sql = "UPDATE tm_prefs SET value ='" + sss + "' WHERE name = 'GLOBAL' AND param = 'pim'"
+    sql = "UPDATE tm_prefs SET value ='" + str(sss) + "' WHERE name = 'GLOBAL' AND param = 'pim'"
     if executeSql(sql) < 1:
-        sql = "INSERT INTO tm_prefs (name, param, value) values ('GLOBAL', 'pim', '" + sss + "')"
+        sql = "INSERT INTO tm_prefs (name, param, value) values ('GLOBAL', 'pim', '" + str(sss) + "')"
         executeSql(sql)
 
     sss = config.getint("CAPACITY", "PACSMaxQandR")
-    sql = "UPDATE tm_prefs SET value ='" + sss + "' WHERE name = 'GLOBAL' AND param = 'piq'"
+    sql = "UPDATE tm_prefs SET value ='" + str(sss) + "' WHERE name = 'GLOBAL' AND param = 'piq'"
     if executeSql(sql) < 1:
-        sql = "INSERT INTO tm_prefs (name, param, value) values ('GLOBAL', 'piq', '" + sss + "')"
+        sql = "INSERT INTO tm_prefs (name, param, value) values ('GLOBAL', 'piq', '" + str(sss) + "')"
         executeSql(sql)
 
     sss = config.getint("CAPACITY", "PACSMaxClients")
-    sql = "UPDATE tm_prefs SET value ='" + sss + "' WHERE name = 'GLOBAL' AND param = 'pil'"
+    sql = "UPDATE tm_prefs SET value ='" + str(sss) + "' WHERE name = 'GLOBAL' AND param = 'pil'"
     if executeSql(sql) < 1:
-        sql = "INSERT INTO tm_prefs (name, param, value) values ('GLOBAL', 'pil', '" + sss + "')"
+        sql = "INSERT INTO tm_prefs (name, param, value) values ('GLOBAL', 'pil', '" + str(sss) + "')"
         executeSql(sql)
 
 
@@ -322,7 +326,7 @@ def isDisabled():
     return str == "1"
 
 
-def checkDBtables():
+def checkDBtables(tmPrefsOnly):
     okay = False
     data = pkgutil.get_data(__package__, 'database.dat')
     values = re.split("\W+", data)
@@ -334,6 +338,8 @@ def checkDBtables():
         data = c.fetchall()
         # name = data[0][0]  # first row, first column
         okay = True
+        c.close()
+        db.close()
     except (SystemExit, KeyboardInterrupt):
         raise
     except sybpydb.Error:
@@ -341,45 +347,73 @@ def checkDBtables():
     except Exception:
         okay = False
 
-    if not okay:
-        sql = "create table tm_prefs (name varchar(64) not null, param varchar(64) not null, value varchar(255) null, primary key (name, param) )"
-        try:
-            c.execute(sql)
-        except (SystemExit, KeyboardInterrupt):
-            raise
-        except sybpydb.Error:
-            for err in c.connection.messages:
-                logger.error("Exception %s, Value %s" % (err[0], err[1]))
-        except Exception:
-            logger.error('Failed', exc_info=True)
+    if tmPrefsOnly:
+        return okay
 
-    okay = False
+    # if not okay:
+    #     sql = "create table tm_prefs (name varchar(64) not null, param varchar(64) not null, value varchar(255) null, primary key (name, param) )"
+    #     try:
+    #         c = db.cursor()
+    #         c.execute(sql)
+    #     except (SystemExit, KeyboardInterrupt):
+    #         raise
+    #     except sybpydb.Error:
+    #         for err in c.connection.messages:
+    #             logger.error("Exception %s, Value %s" % (err[0], err[1]))
+    #     except Exception:
+    #         logger.error('Failed', exc_info=True)
+    #
+    okay2 = False
     try:
+        c = db.cursor()
+        c.execute("SELECT privilege FROM user_privileges")
+        data = c.fetchall()
+        # name = data[0][0]  # first row, first column
+        okay2 = True
+        c.close()
+        db.close()
+    except (SystemExit, KeyboardInterrupt):
+        raise
+    except sybpydb.Error:
+        logger.info("user_privileges is missing")
+        okay2 = False
+    except Exception:
+        okay2 = False
+    #
+    # if not okay:
+    #     sql = "create table user_privileges_lc (indx int not null, privilege varchar(30) not null, description varchar(128) null, licensed int not null )"
+    #     try:
+    #         c = db.cursor()
+    #         c.execute(sql)
+    #     except (SystemExit, KeyboardInterrupt):
+    #         raise
+    #     except sybpydb.Error:
+    #         for err in c.connection.messages:
+    #             logger.error("Exception %s, Value %s" % (err[0], err[1]))
+    #     except Exception:
+    #         logger.error('Failed', exc_info=True)
+    #
+    # c.close()
+    # db.close()
+
+    okay3 = False
+    try:
+        c = db.cursor()
         c.execute("SELECT indx FROM user_privileges_lc")
         data = c.fetchall()
         # name = data[0][0]  # first row, first column
-        okay = True
+        okay3 = True
+        c.close()
+        db.close()
     except (SystemExit, KeyboardInterrupt):
         raise
     except sybpydb.Error:
-        okay = False
+        logger.info("user_privileges_lc is missing")
+        okay3 = False
     except Exception:
-        okay = False
+        okay3 = False
 
-    if not okay:
-        sql = "create table user_privileges_lc (indx int not null, privilege varchar(30) not null, description varchar(128) null, licensed int not null )"
-        try:
-            c.execute(sql)
-        except (SystemExit, KeyboardInterrupt):
-            raise
-        except sybpydb.Error:
-            for err in c.connection.messages:
-                logger.error("Exception %s, Value %s" % (err[0], err[1]))
-        except Exception:
-            logger.error('Failed', exc_info=True)
-
-    c.close()
-    db.close()
+    return okay and okay2 and okay3
 
 
 def test_hideDisabled_isDisabled_():
