@@ -92,8 +92,122 @@ def setUserReplyString(request, response):
         executeSql(sql)
 
 
-def updatePrivBasedOnLicensing(): # TODO
-    i = 1
+def updatePrivBasedOnLicensing():
+
+    data = pkgutil.get_data(__package__, 'database.dat')
+    values = re.split("\W+", data)
+    try:
+        db = Sybase.connect(values[0], values[1], values[2], values[3])
+        c = db.cursor()
+
+        sql = "select distinct user_privileges_lc.privilege, user_privileges_lc.description from user_privileges, user_privileges_lc where availability = 0 and user_privileges.privilege = user_privileges_lc.privilege and licensed = 0 "
+        c.execute(sql)
+        data = c.fetchall()
+
+        for row in data:
+            privilege = row[0]
+            description = row[1]
+
+            sql = "delete from user_privileges where privilege = '" + privilege + "' and availability = 0"
+            c.execute(sql)
+            sql = "insert into user_privileges (privilege, availability, group_id, user_id, description) values ('" + privilege +"', 1, '', '', '" + description + "')"
+            c.execute(sql)
+
+        bEveryoneCheck = False
+        sql = "select distinct user_privileges_lc.privilege, user_privileges_lc.description from user_privileges, user_privileges_lc where availability = 1 and user_privileges.privilege = user_privileges_lc.privilege and licensed = 1 "
+        " and user_privileges_lc.privilege in ('omusl_manage_patients', 'omusl_manage_studies', 'omusl_push_monitor', 'omusl_run', 'omusl_study_status',"
+        " 'omv_add_report', 'omv_edit_report', 'omv_email', 'omv_push', 'omv_save_anno', 'omv_search', 'omv_show_anno', 'omv_view', 'omx_multy', 'omx_run', 'omusl_vcd',"
+        " 'allpro_images', 'omusl_wklst_scu', 'omusl_scanner', 'omusl_attach', 'omusl_non_dicom', 'omusl_lightscribe', 'omusl_cd_import', 'omusl_jpeg_export',"
+        " 'omv_adv_anno', 'omv_https', 'omusl_radviewer')"
+        c.execute(sql)
+        data = c.fetchall()
+
+        for row in data:
+            privilege = row[0]
+            description = row[1]
+
+            sql = "delete from user_privileges where privilege = '" + privilege + "' and availability = 1"
+            c.execute(sql)
+            sql = "insert into user_privileges (privilege, availability, group_id, user_id, description) values ('" + privilege +"', 0, 'everyone', '', '" + description + "')"
+            c.execute(sql)
+            bEveryoneCheck = True
+
+        if (bEveryoneCheck):
+            sql = "SELECT group_name FROM groups WHERE group_name = 'everyone'"
+            c.execute(sql)
+            data = c.fetchall()
+            if (data[0][0] != ""):
+                sql = "insert into groups (group_name) values ('everyone', '')"
+                c.execute(sql)
+
+        bAdminCheck = False
+        sql = "select distinct user_privileges_lc.privilege, user_privileges_lc.description from user_privileges, user_privileges_lc where availability = 1 and user_privileges.privilege = user_privileges_lc.privilege and licensed = 1 "
+        " and user_privileges_lc.privilege in ('omacm_add_priv', 'omacm_admin', 'omadmin_cc', 'omadmin_console', 'omadmin_db_check', 'omadmin_dict', 'omadmin_distr',"
+        " 'omadmin_erpr', 'omadmin_file_audit', 'omadmin_flex', 'omadmin_hp', 'omadmin_kds', 'omadmin_push', 'omadmin_run', 'omadmin_utils', 'omsdm_power_on',"
+        " 'omstm_run', 'omstm_admin', 'omusl_profile', 'omv_vitrea', 'pacs_hl7_adv', 'omv_push_adv', 'pacs_ipad', 'pacs_android', 'omx_publishing',"
+        " 'omusl_vcd_import', 'omusl_oncall_caching', 'rsvw_dictation', 'omv_print', 'omv_dicom_print', 'omv_multi_monitor', 'autoupdate_run', 'omusl_adv_demo',"
+        " 'omusl_adv_filters', 'pacs_wklst_scp', 'pacs_report_activity', 'pacs_backup', 'pacs_backup_adv', 'pacs_hl7', 'pacs_hl7_adv')"
+
+        for row in data:
+            privilege = row[0]
+            description = row[1]
+
+            sql = "delete from user_privileges where privilege = '" + privilege + "' and availability = 1"
+            c.execute(sql)
+            sql = "insert into user_privileges (privilege, availability, group_id, user_id, description) values ('" + privilege + "', 0, '', 'admin', '" + description + "')"
+            c.execute(sql)
+            bAdminCheck = True
+
+        if (bAdminCheck):
+            sql = "select user_id from users where user_id = 'admin'"
+            c.execute(sql)
+            data = c.fetchall()
+            if (data[0][0] != ""):
+                sql = "insert into users (user_id, name, last_name, first_name, password) values ('admin', 'PACSimple Admin', 'Admin', 'PACSimple', 'admin!')"
+                c.execute(sql)
+
+            sql = "select privilege from user_privileges where user_id = 'admin' and privilege = 'omadmin_run'"
+            c.execute(sql)
+            data = c.fetchall()
+            if (data[0][0] != ""):
+                c.execute("select description from user_privileges where privilege = 'omadmin_run'")
+                sql = "delete from user_privileges where privilege = 'omadmin_run' and availability = 1"
+                c.execute(sql)
+                data = c.fetchall()
+                sDescription = data[0][0]
+                sql = "insert into user_privileges (privilege, availability, group_id, user_id, description) values ('omadmin_run', 0, '', 'admin', '" + sDescription + "')"
+                c.execute(sql)
+
+            sql = "select privilege from user_privileges where user_id = 'admin' and privilege = 'omacm_admin'"
+            c.execute(sql)
+            data = c.fetchall()
+            if (data[0][0] != ""):
+                c.execute("select description from user_privileges where privilege = 'omacm_admin'")
+                sql = "delete from user_privileges where privilege = 'omacm_admin' and availability = 1"
+                c.execute(sql)
+                data = c.fetchall()
+                sDescription = data[0][0]
+                sql = "insert into user_privileges (privilege, availability, group_id, user_id, description) values ('omacm_admin', 0, '', 'admin', '" + sDescription + "')"
+                c.execute(sql)
+
+            sql = "select privilege from user_privileges where user_id = 'admin' and privilege = 'omacm_add_priv'"
+            c.execute(sql)
+            data = c.fetchall()
+            if (data[0][0] != ""):
+                c.execute("select description from user_privileges where privilege = 'omacm_add_priv'")
+                sql = "delete from user_privileges where privilege = 'omacm_add_priv' and availability = 1"
+                c.execute(sql)
+                data = c.fetchall()
+                sDescription = data[0][0]
+                sql = "insert into user_privileges (privilege, availability, group_id, user_id, description) values ('omacm_add_priv', 0, '', 'admin', '" + sDescription + "')"
+                c.execute(sql)
+
+            c.close()
+        db.close()
+    except (SystemExit, KeyboardInterrupt):
+        raise
+    except Exception:
+        logger.error('Failed', exc_info=False)
 
 
 def forseUpdatePrivBasedOnLicensing(licenseFile):
@@ -159,7 +273,8 @@ def forseUpdateMaxBasedOnLicensing(licenseFile):
 
 
 def GetLicenseCheckResponse():
-    return ''
+    sql = "select value from tm_prefs where name = 'LCS' and param = 'response'"
+    return getOneValue(sql)
 
 
 def reportLicenseCheck(sToLog, sToDB):
@@ -170,7 +285,6 @@ def reportLicenseCheck(sToLog, sToDB):
     if sToDB:
         sql = "UPDATE tm_prefs SET value ='" + sToDB + "' WHERE name = 'LCS' AND param = 'last_check'"
         updated = executeSql(sql)
-        print (updated)
         if updated < 1:
             sql = "INSERT INTO tm_prefs (name, param, value) values ('LCS', 'last_check', '" + sToDB + "')"
             updated = executeSql(sql)
