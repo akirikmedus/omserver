@@ -7,3 +7,17 @@ start service: systemctl start omserver
 enable service: systemctl enable omserver
 
 list running services: systemctl list-units --type=service --state=running
+
+export PYTHONPATH=/opt/sap/OCS-16_0/python/python26ucs4_64r/lib/
+
+tables:
+    sites
+    tm_prefs
+    user_privileges
+    user_privileges_lc
+    groups
+    users
+
+
+create table user_privileges_lc (indx int not null, privilege varchar(30) not null, description varchar(128) null, licensed int not null )
+

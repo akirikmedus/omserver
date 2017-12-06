@@ -28,7 +28,7 @@ def getOneValue(sql):
         c.execute(sql)
         # print(c.rowcount)
         data = c.fetchall()
-        c.execute("select @@rowcount")
+        c.execute("SELECT @@rowcount")
         # count = c.fetchall()[0][0]
         # print(count)
         c.close()
@@ -55,7 +55,7 @@ def executeSql(sql):
         # print("executeSql. SQL: "+sql)
         # logger.info("executeSql. SQL: "+sql)
         c.execute(sql)
-        c.execute("select @@rowcount")
+        c.execute("SELECT @@rowcount")
         count = c.fetchall()[0][0]
         c.close()
         db.close()
@@ -107,7 +107,7 @@ def updatePrivBasedOnLicensing():
         db = Sybase.connect(values[0], values[1], values[2], values[3])
         c = db.cursor()
 
-        sql = "select distinct user_privileges_lc.privilege, user_privileges_lc.description from user_privileges, user_privileges_lc where availability = 0 and user_privileges.privilege = user_privileges_lc.privilege and licensed = 0 "
+        sql = "SELECT distinct user_privileges_lc.privilege, user_privileges_lc.description FROM user_privileges, user_privileges_lc where availability = 0 and user_privileges.privilege = user_privileges_lc.privilege and licensed = 0 "
         c.execute(sql)
         data = c.fetchall()
 
@@ -115,13 +115,13 @@ def updatePrivBasedOnLicensing():
             privilege = row[0]
             description = row[1]
 
-            sql = "delete from user_privileges where privilege = '" + privilege + "' and availability = 0"
+            sql = "delete FROM user_privileges where privilege = '" + privilege + "' and availability = 0"
             c.execute(sql)
             sql = "insert into user_privileges (privilege, availability, group_id, user_id, description) values ('" + privilege +"', 1, '', '', '" + description + "')"
             c.execute(sql)
 
         bEveryoneCheck = False
-        sql = "select distinct user_privileges_lc.privilege, user_privileges_lc.description from user_privileges, user_privileges_lc where availability = 1 and user_privileges.privilege = user_privileges_lc.privilege and licensed = 1 "
+        sql = "SELECT distinct user_privileges_lc.privilege, user_privileges_lc.description FROM user_privileges, user_privileges_lc where availability = 1 and user_privileges.privilege = user_privileges_lc.privilege and licensed = 1 "
         " and user_privileges_lc.privilege in ('omusl_manage_patients', 'omusl_manage_studies', 'omusl_push_monitor', 'omusl_run', 'omusl_study_status',"
         " 'omv_add_report', 'omv_edit_report', 'omv_email', 'omv_push', 'omv_save_anno', 'omv_search', 'omv_show_anno', 'omv_view', 'omx_multy', 'omx_run', 'omusl_vcd',"
         " 'allpro_images', 'omusl_wklst_scu', 'omusl_scanner', 'omusl_attach', 'omusl_non_dicom', 'omusl_lightscribe', 'omusl_cd_import', 'omusl_jpeg_export',"
@@ -133,7 +133,7 @@ def updatePrivBasedOnLicensing():
             privilege = row[0]
             description = row[1]
 
-            sql = "delete from user_privileges where privilege = '" + privilege + "' and availability = 1"
+            sql = "delete FROM user_privileges where privilege = '" + privilege + "' and availability = 1"
             c.execute(sql)
             sql = "insert into user_privileges (privilege, availability, group_id, user_id, description) values ('" + privilege +"', 0, 'everyone', '', '" + description + "')"
             c.execute(sql)
@@ -148,7 +148,7 @@ def updatePrivBasedOnLicensing():
                 c.execute(sql)
 
         bAdminCheck = False
-        sql = "select distinct user_privileges_lc.privilege, user_privileges_lc.description from user_privileges, user_privileges_lc where availability = 1 and user_privileges.privilege = user_privileges_lc.privilege and licensed = 1 "
+        sql = "SELECT distinct user_privileges_lc.privilege, user_privileges_lc.description FROM user_privileges, user_privileges_lc where availability = 1 and user_privileges.privilege = user_privileges_lc.privilege and licensed = 1 "
         " and user_privileges_lc.privilege in ('omacm_add_priv', 'omacm_admin', 'omadmin_cc', 'omadmin_console', 'omadmin_db_check', 'omadmin_dict', 'omadmin_distr',"
         " 'omadmin_erpr', 'omadmin_file_audit', 'omadmin_flex', 'omadmin_hp', 'omadmin_kds', 'omadmin_push', 'omadmin_run', 'omadmin_utils', 'omsdm_power_on',"
         " 'omstm_run', 'omstm_admin', 'omusl_profile', 'omv_vitrea', 'pacs_hl7_adv', 'omv_push_adv', 'pacs_ipad', 'pacs_android', 'omx_publishing',"
@@ -159,50 +159,50 @@ def updatePrivBasedOnLicensing():
             privilege = row[0]
             description = row[1]
 
-            sql = "delete from user_privileges where privilege = '" + privilege + "' and availability = 1"
+            sql = "delete FROM user_privileges where privilege = '" + privilege + "' and availability = 1"
             c.execute(sql)
             sql = "insert into user_privileges (privilege, availability, group_id, user_id, description) values ('" + privilege + "', 0, '', 'admin', '" + description + "')"
             c.execute(sql)
             bAdminCheck = True
 
         if (bAdminCheck):
-            sql = "select user_id from users where user_id = 'admin'"
+            sql = "SELECT user_id FROM users where user_id = 'admin'"
             c.execute(sql)
             data = c.fetchall()
             if (data[0][0] != ""):
                 sql = "insert into users (user_id, name, last_name, first_name, password) values ('admin', 'PACSimple Admin', 'Admin', 'PACSimple', 'admin!')"
                 c.execute(sql)
 
-            sql = "select privilege from user_privileges where user_id = 'admin' and privilege = 'omadmin_run'"
+            sql = "SELECT privilege FROM user_privileges where user_id = 'admin' and privilege = 'omadmin_run'"
             c.execute(sql)
             data = c.fetchall()
             if (data[0][0] != ""):
-                c.execute("select description from user_privileges where privilege = 'omadmin_run'")
-                sql = "delete from user_privileges where privilege = 'omadmin_run' and availability = 1"
+                c.execute("SELECT description FROM user_privileges where privilege = 'omadmin_run'")
+                sql = "delete FROM user_privileges where privilege = 'omadmin_run' and availability = 1"
                 c.execute(sql)
                 data = c.fetchall()
                 sDescription = data[0][0]
                 sql = "insert into user_privileges (privilege, availability, group_id, user_id, description) values ('omadmin_run', 0, '', 'admin', '" + sDescription + "')"
                 c.execute(sql)
 
-            sql = "select privilege from user_privileges where user_id = 'admin' and privilege = 'omacm_admin'"
+            sql = "SELECT privilege FROM user_privileges where user_id = 'admin' and privilege = 'omacm_admin'"
             c.execute(sql)
             data = c.fetchall()
             if (data[0][0] != ""):
-                c.execute("select description from user_privileges where privilege = 'omacm_admin'")
-                sql = "delete from user_privileges where privilege = 'omacm_admin' and availability = 1"
+                c.execute("SELECT description FROM user_privileges where privilege = 'omacm_admin'")
+                sql = "delete FROM user_privileges where privilege = 'omacm_admin' and availability = 1"
                 c.execute(sql)
                 data = c.fetchall()
                 sDescription = data[0][0]
                 sql = "insert into user_privileges (privilege, availability, group_id, user_id, description) values ('omacm_admin', 0, '', 'admin', '" + sDescription + "')"
                 c.execute(sql)
 
-            sql = "select privilege from user_privileges where user_id = 'admin' and privilege = 'omacm_add_priv'"
+            sql = "SELECT privilege FROM user_privileges where user_id = 'admin' and privilege = 'omacm_add_priv'"
             c.execute(sql)
             data = c.fetchall()
             if (data[0][0] != ""):
-                c.execute("select description from user_privileges where privilege = 'omacm_add_priv'")
-                sql = "delete from user_privileges where privilege = 'omacm_add_priv' and availability = 1"
+                c.execute("SELECT description FROM user_privileges where privilege = 'omacm_add_priv'")
+                sql = "delete FROM user_privileges where privilege = 'omacm_add_priv' and availability = 1"
                 c.execute(sql)
                 data = c.fetchall()
                 sDescription = data[0][0]
@@ -238,7 +238,7 @@ def forseUpdatePrivBasedOnLicensing(licenseFile):
                 continue
             else:
                 s = line.split('=')
-                sql = "update user_privileges_lc set licensed = 1 where privilege = '" + s + "'"
+                sql = "update user_privileges_lc set licensed = 1 WHERE privilege = '" + s + "'"
                 executeSql(sql)
     fp.close()
 
@@ -283,7 +283,7 @@ def forseUpdateMaxBasedOnLicensing(licenseFile):
 
 
 def GetLicenseCheckResponse():
-    sql = "select value from tm_prefs where name = 'LCS' and param = 'response'"
+    sql = "SELECT value FROM tm_prefs WHERE name = 'LCS' and param = 'response'"
     return getOneValue(sql)
 
 
@@ -330,7 +330,7 @@ def checkDBtables():
         db = sybpydb.connect(servername=values[0], user=values[1], password=values[2])
         c = db.cursor()
         c.execute("use us")
-        c.execute("select name from tm_prefs")
+        c.execute("SELECT name FROM tm_prefs")
         data = c.fetchall()
         # name = data[0][0]  # first row, first column
         okay = True
@@ -345,8 +345,6 @@ def checkDBtables():
         sql = "create table tm_prefs (name varchar(64) not null, param varchar(64) not null, value varchar(255) null, primary key (name, param) )"
         try:
             c.execute(sql)
-            c.close()
-            db.close()
         except (SystemExit, KeyboardInterrupt):
             raise
         except sybpydb.Error:
@@ -354,6 +352,34 @@ def checkDBtables():
                 logger.error("Exception %s, Value %s" % (err[0], err[1]))
         except Exception:
             logger.error('Failed', exc_info=True)
+
+    okay = False
+    try:
+        c.execute("SELECT indx FROM user_privileges_lc")
+        data = c.fetchall()
+        # name = data[0][0]  # first row, first column
+        okay = True
+    except (SystemExit, KeyboardInterrupt):
+        raise
+    except sybpydb.Error:
+        okay = False
+    except Exception:
+        okay = False
+
+    if not okay:
+        sql = "create table user_privileges_lc (indx int not null, privilege varchar(30) not null, description varchar(128) null, licensed int not null )"
+        try:
+            c.execute(sql)
+        except (SystemExit, KeyboardInterrupt):
+            raise
+        except sybpydb.Error:
+            for err in c.connection.messages:
+                logger.error("Exception %s, Value %s" % (err[0], err[1]))
+        except Exception:
+            logger.error('Failed', exc_info=True)
+
+    c.close()
+    db.close()
 
 
 def test_hideDisabled_isDisabled_():
