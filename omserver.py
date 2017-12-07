@@ -37,6 +37,11 @@ def getMacAddress(): # done
     return address.replace(':','-')
 
 
+def getMachineID():
+    # sudo dmidecode | grep -i uuid
+    return getMacAddress()
+
+
 def deleteLicenseFile(fileName): # done
     logger.info('deleting file: ' + fileName)
     try:
@@ -210,7 +215,8 @@ def main():
     #else:
     #    logger.info("License file not found - " + licenseFile)
 
-    macaddress = getMacAddress()
+    macaddress = getMachineID()
+    # macaddress = db.getMachineID()
     logger.info('mac address: ' + macaddress)
 
     siteid = db.getSiteID()

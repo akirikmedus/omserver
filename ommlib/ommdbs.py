@@ -85,6 +85,10 @@ def getProductKey():
     return getOneValue(sql)
 
 
+def getMachineID():
+    sql = "SELECT value FROM tm_prefs WHERE name = 'GLOBAL' AND param = 'MachineID'"
+    return getOneValue(sql)
+
 def setUserReplyString(request, response):
     # logger.info("setUserReplyString")
 

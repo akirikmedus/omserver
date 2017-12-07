@@ -1,5 +1,25 @@
-install netifaces: yum install python-netifaces
+git clone https://github.com/andykirik/omserver
 
+
+It’s a Python application, so Python should be install on the target system.
+Python requires two additional libraries: netifaces and Sybase
+install netifaces: yum install python-netifaces
+export PYTHONPATH=/opt/sap/OCS-16_0/python/python26ucs4_64r/lib/ (is it enough to set it up permanently (after reboot)?)
+
+
+OMServer requires specific tables in us database – we need to verify that installer creates all of them
+sites
+tm_prefs
+user_privileges
+user_privileges_lc
+groups
+users
+
+PACS installer has scripts to create all tables except user_privileges_lc:
+create table user_privileges_lc (indx int not null, privilege varchar(30) not null, description varchar(128) null, licensed int not null )
+                
+
+OMServer on Linux is run as a scheduler task, to install:
 copy: omserver.service to /etc/systemd/system/
 copy: omserver.timer to /etc/systemd/system/
 
@@ -8,16 +28,22 @@ enable service: systemctl enable omserver
 
 list running services: systemctl list-units --type=service --state=running
 
-export PYTHONPATH=/opt/sap/OCS-16_0/python/python26ucs4_64r/lib/
-
-tables:
-    sites
-    tm_prefs
-    user_privileges
-    user_privileges_lc
-    groups
-    users
+To get license OMServer needs Product Key: select value_ from tm_prefs where name = 'GLOBAL' and param = 'DeviceID'
+It should be put there by the PACS installer.
 
 
-create table user_privileges_lc (indx int not null, privilege varchar(30) not null, description varchar(128) null, licensed int not null )
+Functionality mimics that of Windows OMServer:
+It checks if license file is present.
+If it does it creates a hash of license file and sends VERIFY license request to the licensing server; part of this request is unique machine id and product key.
+If hash matches response is OK and check is finished.
+If hash don’t match response is CORRUPTED and omserver download license again (see below).
+If machine id don’t match response wound be POSSIBLE TRANSFER; in this case omserver store this reply in database.
+On windows system Study List is responsible to communicate it to the end user, but on CentOS it would be a dead end so far.
+
+Reply from the server could be LICENSE DISABLED, in this case omserver deletes license file.
+
+If license file is not present omserver sends GET LICENSE request; part of this request is unique machine id and product key.
+Upon receiving the license omserver stores it to the local file (/opt/OMTCmm/cf/license.dat)
+And updates database with max values and privileges. As I understand we don’t have code right now to honor those limits, do we?
+
 
