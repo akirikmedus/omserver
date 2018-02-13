@@ -22,7 +22,8 @@ dt:^20171106
 <br>"""
 
 
-testReplyLicenseIssued = """msg:^License issued|MSG_LICENSE_ISSUED
+testReplyLicenseIssued = ""
+"""msg:^License issued|MSG_LICENSE_ISSUED
 status:^LICENSE_ISSUED
 licHashCode:^120e8c04b29bba99b64359adf54a5c99b738a703
 licCount:^5494
@@ -187,7 +188,7 @@ def getLicenseInfo(productkey, mc, regtype, lichashcode, ts):
     params = {
         'productKey': productkey,  # '1234-5678',
         'mc': mc,                  # '12345678',
-        'regtype': regtype,        # 'VERIFY', #'GET_LICENSE'
+        'reqtype': regtype,        # 'VERIFY', #'GET_LICENSE'
         'licHashCode': lichashcode,
         'ts': ts
     }
