@@ -22,8 +22,7 @@ dt:^20171106
 <br>"""
 
 
-testReplyLicenseIssued = ""
-"""msg:^License issued|MSG_LICENSE_ISSUED
+testReplyLicenseIssued = """msg:^License issued|MSG_LICENSE_ISSUED
 status:^LICENSE_ISSUED
 licHashCode:^120e8c04b29bba99b64359adf54a5c99b738a703
 licCount:^5494

@@ -28,7 +28,7 @@ def getOneValue(sql):
         c.execute(sql)
         # print(c.rowcount)
         data = c.fetchall()
-        c.execute("SELECT @@rowcount")
+        # c.execute("SELECT @@rowcount")
         # count = c.fetchall()[0][0]
         # print(count)
         c.close()
@@ -41,7 +41,7 @@ def getOneValue(sql):
         for err in c.connection.messages:
             logger.error("Exception %s, Value %s" % (err[0], err[1]))
     except Exception:
-        logger.error('Failed', exc_info=False)
+        logger.error('getOneValue Failed', exc_info=False)
     return ''
 
 
@@ -66,7 +66,7 @@ def executeSql(sql):
         for err in c.connection.messages:
             logger.error("Exception %s, Value %s" % (err[0], err[1]))
     except Exception:
-        logger.error('Failed', exc_info=False)
+        logger.error('executeSql Failed', exc_info=False)
     return 0
 
 
@@ -89,6 +89,7 @@ def getMachineID():
     sql = "SELECT value FROM tm_prefs WHERE name = 'GLOBAL' AND param = 'MachineID'"
     return getOneValue(sql)
 
+
 def setUserReplyString(request, response):
     # logger.info("setUserReplyString")
 
@@ -108,8 +109,9 @@ def updatePrivBasedOnLicensing():
     data = pkgutil.get_data(__package__, 'database.dat')
     values = re.split("\W+", data)
     try:
-        db = Sybase.connect(values[0], values[1], values[2], values[3])
+        db = sybpydb.connect(servername=values[0], user=values[1], password=values[2])
         c = db.cursor()
+        c.execute("use us")
 
         sql = "SELECT distinct user_privileges_lc.privilege, user_privileges_lc.description FROM user_privileges, user_privileges_lc where availability = 0 and user_privileges.privilege = user_privileges_lc.privilege and licensed = 0 "
         c.execute(sql)
@@ -213,7 +215,7 @@ def updatePrivBasedOnLicensing():
                 sql = "insert into user_privileges (privilege, availability, group_id, user_id, description) values ('omacm_add_priv', 0, '', 'admin', '" + sDescription + "')"
                 c.execute(sql)
 
-            c.close()
+        c.close()
         db.close()
     except (SystemExit, KeyboardInterrupt):
         raise
@@ -221,7 +223,7 @@ def updatePrivBasedOnLicensing():
         for err in c.connection.messages:
             logger.error("Exception %s, Value %s" % (err[0], err[1]))
     except Exception:
-        logger.error('Failed', exc_info=False)
+        logger.error('updatePrivBasedOnLicensing Failed', exc_info=False)
 
 
 def forseUpdatePrivBasedOnLicensing(licenseFile):
@@ -334,39 +336,43 @@ def checkDBtables(tmPrefsOnly):
     okay = False
     data = pkgutil.get_data(__package__, 'database.dat')
     values = re.split("\W+", data)
+    db = sybpydb.connect(servername=values[0], user=values[1], password=values[2])
+    c = db.cursor()
     try:
-        db = sybpydb.connect(servername=values[0], user=values[1], password=values[2])
-        c = db.cursor()
         c.execute("use us")
         c.execute("SELECT name FROM tm_prefs")
         data = c.fetchall()
         # name = data[0][0]  # first row, first column
         okay = True
-        c.close()
-        db.close()
+        logger.info("tm_prefs exists")
     except (SystemExit, KeyboardInterrupt):
         raise
     except sybpydb.Error:
+        logger.info("tm_prefs is missing")
         okay = False
     except Exception:
         okay = False
 
+    if not okay:
+        sql = "create table tm_prefs (name varchar(64) not null, param varchar(64) not null, value varchar(255) null, primary key (name, param) )"
+        try:
+            c = db.cursor()
+            c.execute(sql)
+            okay = True
+        except (SystemExit, KeyboardInterrupt):
+            raise
+        except sybpydb.Error:
+            # for err in c.connection.messages:
+            #    logger.error("Exception %s, Value %s" % (err[0], err[1]))
+            logger.info("failed to create tm_prefs")
+        except Exception:
+            logger.error('Failed', exc_info=True)
+
     if tmPrefsOnly:
+        c.close()
+        db.close()
         return okay
 
-    # if not okay:
-    #     sql = "create table tm_prefs (name varchar(64) not null, param varchar(64) not null, value varchar(255) null, primary key (name, param) )"
-    #     try:
-    #         c = db.cursor()
-    #         c.execute(sql)
-    #     except (SystemExit, KeyboardInterrupt):
-    #         raise
-    #     except sybpydb.Error:
-    #         for err in c.connection.messages:
-    #             logger.error("Exception %s, Value %s" % (err[0], err[1]))
-    #     except Exception:
-    #         logger.error('Failed', exc_info=True)
-    #
     okay2 = False
     try:
         c = db.cursor()
@@ -374,8 +380,7 @@ def checkDBtables(tmPrefsOnly):
         data = c.fetchall()
         # name = data[0][0]  # first row, first column
         okay2 = True
-        c.close()
-        db.close()
+        logger.info("user_privileges exists")
     except (SystemExit, KeyboardInterrupt):
         raise
     except sybpydb.Error:
@@ -383,22 +388,21 @@ def checkDBtables(tmPrefsOnly):
         okay2 = False
     except Exception:
         okay2 = False
-    #
-    # if not okay:
-    #     sql = "create table user_privileges_lc (indx int not null, privilege varchar(30) not null, description varchar(128) null, licensed int not null )"
-    #     try:
-    #         c = db.cursor()
-    #         c.execute(sql)
-    #     except (SystemExit, KeyboardInterrupt):
-    #         raise
-    #     except sybpydb.Error:
-    #         for err in c.connection.messages:
-    #             logger.error("Exception %s, Value %s" % (err[0], err[1]))
-    #     except Exception:
-    #         logger.error('Failed', exc_info=True)
-    #
-    # c.close()
-    # db.close()
+
+    if not okay2:
+        sql = "create table user_privileges (privilege varchar(30) not null, availability int not null, group_id varchar(30) null, user_id varchar(30) null, description varchar(128) null )"
+        try:
+            c = db.cursor()
+            c.execute(sql)
+            okay2 = True
+        except (SystemExit, KeyboardInterrupt):
+            raise
+        except sybpydb.Error:
+            # for err in c.connection.messages:
+            #    logger.error("Exception %s, Value %s" % (err[0], err[1]))
+            logger.info("failed to create user_privileges")
+        except Exception:
+            logger.error('Failed', exc_info=True)
 
     okay3 = False
     try:
@@ -407,8 +411,7 @@ def checkDBtables(tmPrefsOnly):
         data = c.fetchall()
         # name = data[0][0]  # first row, first column
         okay3 = True
-        c.close()
-        db.close()
+        logger.info("user_privileges_lc exists")
     except (SystemExit, KeyboardInterrupt):
         raise
     except sybpydb.Error:
@@ -417,7 +420,69 @@ def checkDBtables(tmPrefsOnly):
     except Exception:
         okay3 = False
 
-    return okay and okay2 and okay3
+    if not okay3:
+        sql = "create table user_privileges_lc (indx int not null, privilege varchar(30) not null, description varchar(128) null, licensed int not null )"
+        try:
+            c = db.cursor()
+            c.execute(sql)
+            okay3 = True
+        except (SystemExit, KeyboardInterrupt):
+            raise
+        except sybpydb.Error:
+            # for err in c.connection.messages:
+            #    logger.error("Exception %s, Value %s" % (err[0], err[1]))
+            logger.info("failed to create user_privileges_lc")
+        except Exception:
+            logger.error('Failed', exc_info=True)
+
+    okay4 = False
+    try:
+        c = db.cursor()
+        c.execute("SELECT * FROM groups")
+        data = c.fetchall()
+        # name = data[0][0]  # first row, first column
+        okay4 = True
+        logger.info("groups exists")
+    except (SystemExit, KeyboardInterrupt):
+        raise
+    except sybpydb.Error:
+        logger.info("groups is missing")
+        okay4 = False
+    except Exception:
+        okay4 = False
+
+    if not okay4:
+        sql = "create table groups (group_name varchar(30) not null, user_id varchar(30) null )"
+        try:
+            c = db.cursor()
+            c.execute(sql)
+            okay4 = True
+        except (SystemExit, KeyboardInterrupt):
+            raise
+        except sybpydb.Error:
+            # for err in c.connection.messages:
+            #    logger.error("Exception %s, Value %s" % (err[0], err[1]))
+            logger.info("failed to create groups")
+        except Exception:
+            logger.error('Failed', exc_info=True)
+        sql = "insert into groups (group_name, user_id) values ('everyone', '')"
+        try:
+            c = db.cursor()
+            c.execute(sql)
+            okay4 = True
+        except (SystemExit, KeyboardInterrupt):
+            raise
+        except sybpydb.Error:
+            # for err in c.connection.messages:
+            #    logger.error("Exception %s, Value %s" % (err[0], err[1]))
+            logger.info("failed to insert groups")
+        except Exception:
+            logger.error('Failed', exc_info=True)
+
+    c.close()
+    db.close()
+
+    return okay and okay2 and okay3 and okay4
 
 
 def test_hideDisabled_isDisabled_():

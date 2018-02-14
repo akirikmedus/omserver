@@ -22,14 +22,9 @@ def getOneValue(sql):
     try:
         db = Sybase.connect(values[0], values[1], values[2], values[3])
         c = db.cursor()
-        # print("executeSql. SQL: "+sql)
-        # logger.info("executeSql. SQL: " + sql)
+        print("getOneValue. SQL: " + sql)
         c.execute(sql)
         data = c.fetchall()
-        # c.execute("select @@rowcount")
-        # count = c.fetchall()[0][0]
-        # count = c.rowcount
-        # print(count)
         c.close()
         db.close()
         return data[0][0] # first row, first column
@@ -37,7 +32,7 @@ def getOneValue(sql):
     except (SystemExit, KeyboardInterrupt):
         raise
     except Exception:
-        logger.error('Failed', exc_info=False)
+        logger.error('getOneValue Failed', exc_info=False)
     return ''
 
 
@@ -48,18 +43,18 @@ def executeSql(sql):
         db = Sybase.connect(values[0], values[1], values[2], values[3])
         c = db.cursor()
         print("executeSql. SQL: "+sql)
-        # logger.info("executeSql. SQL: "+sql)
         c.execute(sql)
         c.execute("select @@rowcount")
         count = c.fetchall()[0][0]
         c.close()
         db.close()
-        return c.rowcount
-        # return count
+        # return c.rowcount
+        return count
+        # return 1
     except (SystemExit, KeyboardInterrupt):
         raise
     except Exception:
-        logger.error('Failed', exc_info=False)
+        logger.error('executeSql Failed', exc_info=False)
     return 0
 
 
@@ -207,7 +202,7 @@ def updatePrivBasedOnLicensing():
     except (SystemExit, KeyboardInterrupt):
         raise
     except Exception:
-        logger.error('Failed', exc_info=False)
+        logger.error('updatePrivBasedOnLicensing Failed', exc_info=False)
 
 
 def forseUpdatePrivBasedOnLicensing(licenseFile):
@@ -242,33 +237,33 @@ def forseUpdateMaxBasedOnLicensing(licenseFile):
     config.read(licenseFile)
 
     sss = config.getint("CAPACITY", "PACSMaxImageCount")
-    sql = "UPDATE tm_prefs SET value ='" + sss + "' WHERE name = 'GLOBAL' AND param = 'pic'"
+    sql = "UPDATE tm_prefs SET value ='" + str(sss) + "' WHERE name = 'GLOBAL' AND param = 'pic'"
     if executeSql(sql) < 1:
-        sql = "INSERT INTO tm_prefs (name, param, value) values ('GLOBAL', 'pic', '" + sss + "')"
+        sql = "INSERT INTO tm_prefs (name, param, value) values ('GLOBAL', 'pic', '" + str(sss) + "')"
         executeSql(sql)
 
     sss = config.getint("CAPACITY", "PACSMaxPushDestinations")
-    sql = "UPDATE tm_prefs SET value ='" + sss + "' WHERE name = 'GLOBAL' AND param = 'pid'"
+    sql = "UPDATE tm_prefs SET value ='" + str(sss) + "' WHERE name = 'GLOBAL' AND param = 'pid'"
     if executeSql(sql) < 1:
-        sql = "INSERT INTO tm_prefs (name, param, value) values ('GLOBAL', 'pid', '" + sss + "')"
+        sql = "INSERT INTO tm_prefs (name, param, value) values ('GLOBAL', 'pid', '" + str(sss) + "')"
         executeSql(sql)
 
     sss = config.getint("CAPACITY", "PACSMaxModalities")
-    sql = "UPDATE tm_prefs SET value ='" + sss + "' WHERE name = 'GLOBAL' AND param = 'pim'"
+    sql = "UPDATE tm_prefs SET value ='" + str(sss) + "' WHERE name = 'GLOBAL' AND param = 'pim'"
     if executeSql(sql) < 1:
-        sql = "INSERT INTO tm_prefs (name, param, value) values ('GLOBAL', 'pim', '" + sss + "')"
+        sql = "INSERT INTO tm_prefs (name, param, value) values ('GLOBAL', 'pim', '" + str(sss) + "')"
         executeSql(sql)
 
     sss = config.getint("CAPACITY", "PACSMaxQandR")
-    sql = "UPDATE tm_prefs SET value ='" + sss + "' WHERE name = 'GLOBAL' AND param = 'piq'"
+    sql = "UPDATE tm_prefs SET value ='" + str(sss) + "' WHERE name = 'GLOBAL' AND param = 'piq'"
     if executeSql(sql) < 1:
-        sql = "INSERT INTO tm_prefs (name, param, value) values ('GLOBAL', 'piq', '" + sss + "')"
+        sql = "INSERT INTO tm_prefs (name, param, value) values ('GLOBAL', 'piq', '" + str(sss) + "')"
         executeSql(sql)
 
     sss = config.getint("CAPACITY", "PACSMaxClients")
-    sql = "UPDATE tm_prefs SET value ='" + sss + "' WHERE name = 'GLOBAL' AND param = 'pil'"
+    sql = "UPDATE tm_prefs SET value ='" + str(sss) + "' WHERE name = 'GLOBAL' AND param = 'pil'"
     if executeSql(sql) < 1:
-        sql = "INSERT INTO tm_prefs (name, param, value) values ('GLOBAL', 'pil', '" + sss + "')"
+        sql = "INSERT INTO tm_prefs (name, param, value) values ('GLOBAL', 'pil', '" + str(sss) + "')"
         executeSql(sql)
 
 
@@ -312,7 +307,7 @@ def isDisabled():
     return str == "1"
 
 
-def checkDBtables():
+def checkDBtables(tmPrefsOnly):
     okay = False
     data = pkgutil.get_data(__package__, 'database.dat')
     values = re.split("\W+", data)
@@ -321,23 +316,116 @@ def checkDBtables():
         c = db.cursor()
         c.execute("select name from tm_prefs")
         data = c.fetchall()
-        # name = data[0][0]  # first row, first column
         okay = True
+        logger.info("tm_prefs exists")
     except (SystemExit, KeyboardInterrupt):
         raise
     except Exception:
+        logger.info("tm_prefs is missing")
         okay = False
 
     if not okay:
         sql = "create table tm_prefs (name varchar(64) not null, param varchar(64) not null, value varchar(255) null, primary key (name, param) )"
         try:
             c.execute(sql)
-            c.close()
-            db.close()
+            okay = True
         except (SystemExit, KeyboardInterrupt):
             raise
         except Exception:
             logger.error('Failed', exc_info=True)
+
+    if tmPrefsOnly:
+        c.close()
+        db.close()
+        return okay
+
+    okay2 = False
+    data = pkgutil.get_data(__package__, 'database.dat')
+    values = re.split("\W+", data)
+    try:
+        db = Sybase.connect(values[0], values[1], values[2], values[3])
+        c = db.cursor()
+        c.execute("SELECT user_id FROM user_privileges")
+        data = c.fetchall()
+        okay2 = True
+        logger.info("user_privileges exists")
+    except (SystemExit, KeyboardInterrupt):
+        raise
+    except Exception:
+        okay2 = False
+
+    if not okay2:
+        sql = "create table user_privileges (privilege varchar(30) not null, availability int not null, group_id varchar(30) null, user_id varchar(30) null, description varchar(128) null )"
+        try:
+            c.execute(sql)
+            okay2 = True
+        except (SystemExit, KeyboardInterrupt):
+            raise
+        except Exception:
+            logger.error('Failed', exc_info=True)
+
+    okay3 = False
+    data = pkgutil.get_data(__package__, 'database.dat')
+    values = re.split("\W+", data)
+    try:
+        db = Sybase.connect(values[0], values[1], values[2], values[3])
+        c = db.cursor()
+        c.execute("SELECT indx FROM user_privileges_lc")
+        data = c.fetchall()
+        okay3 = True
+        logger.info("user_privileges_lc exists")
+    except (SystemExit, KeyboardInterrupt):
+        raise
+    except Exception:
+        okay3 = False
+
+    if not okay3:
+        sql = "create table user_privileges_lc (indx int not null, privilege varchar(30) not null, description varchar(128) null, licensed int not null )"
+        try:
+            c.execute(sql)
+            okay3 = True
+        except (SystemExit, KeyboardInterrupt):
+            raise
+        except Exception:
+            logger.error('Failed', exc_info=True)
+
+    okay4 = False
+    data = pkgutil.get_data(__package__, 'database.dat')
+    values = re.split("\W+", data)
+    try:
+        db = Sybase.connect(values[0], values[1], values[2], values[3])
+        c = db.cursor()
+        c.execute("SELECT * FROM groups")
+        data = c.fetchall()
+        okay4 = True
+        logger.info("groups exists")
+    except (SystemExit, KeyboardInterrupt):
+        raise
+    except Exception:
+        okay4 = False
+
+    if not okay4:
+        sql = "create table groups (group_name varchar(30) not null, user_id varchar(30) null )"
+        try:
+            c.execute(sql)
+            okay4 = True
+        except (SystemExit, KeyboardInterrupt):
+            raise
+        except Exception:
+            logger.error('Failed', exc_info=True)
+        sql = "insert into groups (group_name, user_id) values ('everyone', '')"
+        try:
+            c.execute(sql)
+            okay4 = True
+        except (SystemExit, KeyboardInterrupt):
+            raise
+        except Exception:
+            logger.error('Failed', exc_info=True)
+
+    c.close()
+    db.close()
+
+    return okay and okay2 and okay3 and okay4
 
 
 def test_hideDisabled_isDisabled_():
