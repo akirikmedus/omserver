@@ -3,7 +3,7 @@
 import sys
 import logging
 import logging.handlers
-# import ommlib.ommdb as db
+# import ommlib.ommdb as db # executeSql doesn't work correctly - doesn't return rowcount
 import ommlib.ommdbs as db
 import ommlib.httpclient as hc
 import utils.fileutils as fu
@@ -200,7 +200,7 @@ def main():
     strTimeStamp = strftime("%Y%m%d%H%M%S", gmtime())
     # logger.info('time:'+strTimeStamp)
 
-    if not db.checkDBtables(True):
+    if not db.checkDBtables(False):
         logger.error("Database check failed. Cannot continue.")
         return
 
