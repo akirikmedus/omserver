@@ -298,6 +298,7 @@ def test():
     print ("===  U N I T   T E S T  ===")
     db.test_getSiteID_()
     db.test_reportLicenseCheck_()
+    fu.test_getHash_()
 
 if __name__ == '__main__':
 

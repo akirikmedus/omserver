@@ -11,12 +11,12 @@ def getHash(str):
     ''' returns hash for a string
         Ready to use
     '''
-    return hashlib.sha1(str).hexdigest()
+    return hashlib.sha1(str).hexdigest().upper()
 
 
 def test_getHash_():
     print ("=== getHash ===")
-    if '2fd4e1c67a2d28fced849ee1bb76e7391b93eb12' == (hashlib.sha1("The quick brown fox jumps over the lazy dog").hexdigest()):
+    if '2FD4E1C67A2D28FCED849EE1BB76E7391B93EB12' == (hashlib.sha1("The quick brown fox jumps over the lazy dog").hexdigest().upper()):
         print("OK")
     else:
         print("Failed")

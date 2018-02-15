@@ -20,17 +20,23 @@ def getHash(filename):
     license = f.read()
     f.close()
 
-    return hashlib.sha1(license).hexdigest()
+    return hashlib.sha1(license).hexdigest().upper()
 
 
 def test_getHash_():
     print ("=== getHash ===")
 
-    if("8812fa2cc436af0cc2b0c372ce43a6763e57a547" == getHash("fileutils.txt")):
+    if("8812FA2CC436AF0CC2B0C372CE43A6763E57A547" == getHash("fileutils.txt")):
         print("OK")
     else:
         print("Failed")
         print(getHash("fileutils.txt"))
+
+    if ("D2036C0C1905D1591D7087C6D7DD4989A3F5B8C4" == getHash("license.dat")):
+        print("OK")
+    else:
+        print("Failed")
+        print(getHash("license.dat"))
 
 
 if __name__ == '__main__':
